@@ -3,23 +3,22 @@
  */
 package com.microtripit.mandrillapp.lutung.model;
 
-import org.apache.http.HttpEntity;
+import com.microtripit.mandrillapp.lutung.logging.Logger;
+import com.microtripit.mandrillapp.lutung.logging.LoggerFactory;
+import com.microtripit.mandrillapp.lutung.model.MandrillApiError.MandrillError;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
 import org.apache.http.client.config.RequestConfig;
+import org.apache.http.conn.ConnectionKeepAliveStrategy;
 import org.apache.http.conn.params.ConnRoutePNames;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
+import org.apache.http.protocol.HttpContext;
 import org.apache.http.util.EntityUtils;
 
-import com.microtripit.mandrillapp.lutung.logging.Logger;
-import com.microtripit.mandrillapp.lutung.logging.LoggerFactory;
-import com.microtripit.mandrillapp.lutung.model.MandrillApiError.MandrillError;
-
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.InetSocketAddress;
 import java.net.Proxy;
 import java.net.ProxySelector;
@@ -48,7 +47,8 @@ public final class MandrillRequestDispatcher {
 	 * The value is expressed in milliseconds.
 	 * */
 	public static int CONNECTION_TIMEOUT_MILLIS = 0;
-	
+
+	public static int KEEP_ALIVE_MILLIS = 1000;
 	
 	private static CloseableHttpClient httpClient;
 	private static PoolingHttpClientConnectionManager connexionManager;
@@ -61,7 +61,14 @@ public final class MandrillRequestDispatcher {
 				.setSocketTimeout(SOCKET_TIMEOUT_MILLIS)
 				.setConnectTimeout(CONNECTION_TIMEOUT_MILLIS)
 				.setConnectionRequestTimeout(CONNECTION_TIMEOUT_MILLIS).build();
-		httpClient = HttpClients.custom().setUserAgent("/Lutung-0.1")
+		httpClient = HttpClients.custom()
+				.setKeepAliveStrategy(new ConnectionKeepAliveStrategy() {
+					@Override
+					public long getKeepAliveDuration(HttpResponse httpResponse, HttpContext httpContext) {
+						return KEEP_ALIVE_MILLIS;
+					}
+				})
+				.setUserAgent("/Lutung-0.1")
 				.setDefaultRequestConfig(defaultRequestConfig)
 				.setConnectionManager(connexionManager).useSystemProperties()
 				.build();
